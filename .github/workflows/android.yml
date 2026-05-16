@@ -1,27 +1,16 @@
 name: Android CI
 
 on:
-  pull_request:
-    branches-ignore:
-      - 'l10n_v3_openjdk2'
-    types: [ opened, reopened ]
-  push:
-    branches-ignore:
-      - 'l10n_v3_openjdk2'
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-    env:
-      GPLAY_KEYSTORE_PASSWORD: ${{ secrets.GPLAY_KEYSTORE_PASSWORD }}
-      CURSEFORGE_API_KEY: ${{ secrets.CURSEFORGE_API_KEY }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
-          fetch-depth: 0
+          submodules: true
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -29,37 +18,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Get LTW
-        run: |
-          sudo apt update && sudo apt install wget unzip -y
-          mkdir -p app_pojavlauncher/libs
-          cd app_pojavlauncher/libs
-          wget https://github.com/PojavLauncherTeam/LTW/releases/latest/download/ltw-release.aar
-
-      - name: Setup gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.11"
 
-      - name: Build JRE JAR files
-        run: |
-          chmod +x ./scripts/languagelist_updater.sh
-          ./scripts/languagelist_updater.sh
-          mkdir -p out
-          gradle :jre_lwjgl3glfw:build --no-daemon
-
-      - name: Generate Android Resources
-        run: |
-          gradle :app_pojavlauncher:generateDebugBuildConfig --no-daemon
-          gradle :app_pojavlauncher:compileDebugSources --no-daemon
-
-      - name: Build Debug .apk
-        run: |
-          gradle :app_pojavlauncher:assembleDebug --no-daemon
-          mv app_pojavlauncher/build/outputs/apk/debug/app_pojavlauncher-debug.apk .
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: PojavLauncher-Custom-APK
-          path: app_pojavlauncher-debug.apk
+          name: My-Custom-PojavLauncher
+          path: app_pojavlauncher/build/outputs/apk/debug/app_pojavlauncher-debug.apk
+          
